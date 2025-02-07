@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:latest # Usa la imagen oficial de Redis
+    container_name: redis_container
+    ports:
+      - '6379:6379' # Expone el puerto 6379 del contenedor en el host
+    volumes:
+      - redis_data:/data # Persiste los datos de Redis en un volumen
+    restart: always # Reinicia el contenedor automáticamente si se detiene
+
+volumes:
+  redis_data: # Define un volumen para persistir los datos de Redis
