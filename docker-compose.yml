@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   redis:
-    image: redis:latest # Usa la imagen oficial de Redis
-    container_name: redis_container
+    image: redis:alpine # Usa la imagen oficial de Redis
+    container_name: redis
     ports:
       - '6379:6379' # Expone el puerto 6379 del contenedor en el host
     volumes:
