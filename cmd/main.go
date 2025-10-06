@@ -1,42 +1,54 @@
 package main
 
 import (
-	"flag"
+	"context"
 	"fmt"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/TonyGLL/caching-proxy-server/internal"
+	"github.com/TonyGLL/caching-proxy-server/pkg/config"
 )
 
 func main() {
-	//* Definir flags
-	port := flag.Int("port", 0, "Port to run the caching proxy on")
-	origin := flag.String("origin", "", "Origin server to proxy requests to")
-	clearCache := flag.Bool("clear-cache", false, "Clear the cache")
+	// Load configuration from environment variables
+	cfg := config.Load()
 
-	//* Parsear los flags
-	flag.Parse()
+	// Initialize Redis client
+	redisClient, err := internal.NewRedisClient(cfg.RedisAddr)
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+	defer redisClient.Close()
 
-	//* Inicializar Redis
-	internal.InitRedis("localhost:6379")
+	// Create a new server
+	server := internal.NewServer(cfg, redisClient)
 
-	if *clearCache {
-		err := internal.ClearCache()
-		if err != nil {
-			log.Fatalf("Error clearing cache: %v", err)
+	// Set up graceful shutdown
+	go func() {
+		if err := server.Start(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Could not start server: %v", err)
 		}
-		fmt.Println("Cache cleared successfully")
-		return
+	}()
+
+	fmt.Printf("Server started on port %d, proxying to %s\n", cfg.Port, cfg.OriginURL)
+
+	// Wait for interrupt signal to gracefully shut down the server
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	fmt.Println("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Server shutdown failed: %v", err)
 	}
 
-	//* Iniciar el servidor con los parámetros proporcionados
-	if *port == 0 {
-		log.Fatal("Port server must be specified")
-	}
-
-	if *origin == "" {
-		log.Fatal("Origin server must be specified")
-	}
-
-	internal.StartServer(*port, *origin)
+	fmt.Println("Server exited gracefully")
 }

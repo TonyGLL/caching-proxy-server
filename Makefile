@@ -1,51 +1,70 @@
-# Variables
-BINARY_NAME=main
-REDIS_CONTAINER_NAME=redis_container
-REDIS_PORT=6379
-PORT?=3000  # Valor por defecto para el puerto
-ORIGIN?=http://dummyjson.com  # Valor por defecto para el origen
+# ==============================================================================
+# Makefile for the Caching Proxy Server
+# ==============================================================================
 
-# Comando para construir el proyecto
+# Go parameters
+BINARY_NAME=caching-proxy
+GO_FILES=$(shell find . -name '*.go' -not -path "./vendor/*")
+
+# Environment variables (with default values)
+export PORT ?= 8080
+export ORIGIN_URL ?= https://dummyjson.com
+export REDIS_ADDR ?= localhost:6379
+export CACHE_EXPIRES ?= 10m
+
+# Docker parameters
+DOCKER_COMPOSE_FILE=docker-compose.yml
+
+.PHONY: all build run clean test tidy start-redis stop-redis check-redis
+
+all: build
+
+# ------------------------------------------------------------------------------
+# Build and Run
+# ------------------------------------------------------------------------------
+
 build:
-	@echo "Building the project..."
-	@go build -o $(BINARY_NAME) cmd/main.go
-	@echo "Build complete."
+	@echo "Building binary..."
+	@go build -o $(BINARY_NAME) ./cmd/main.go
 
-# Comando para ejecutar el proyecto
 run: build
-	@echo "Starting the application on port $(PORT) with origin $(ORIGIN)..."
-	@./$(BINARY_NAME) --port $(PORT) --origin $(ORIGIN)
+	@echo "Starting server on port $(PORT)"
+	@echo "Proxying to: $(ORIGIN_URL)"
+	@./$(BINARY_NAME)
 
-# Comando para limpiar la caché de Redis
-clear-cache:
-	@echo "Clearing Redis cache..."
-	@./$(BINARY_NAME) --clear-cache
+# ------------------------------------------------------------------------------
+# Testing and Linting
+# ------------------------------------------------------------------------------
 
-# Comando para levantar Redis con Docker Compose
-start-redis:
-	@echo "Starting Redis container..."
-	@docker-compose up -d
-	@echo "Redis is running on port $(REDIS_PORT)."
-
-# Comando para detener Redis
-stop-redis:
-	@echo "Stopping Redis container..."
-	@docker-compose down
-	@echo "Redis container stopped."
-
-# Comando para ejecutar tests (si tienes tests)
 test:
 	@echo "Running tests..."
-	@go test ./...
-	@echo "Tests complete."
+	@go test -v ./...
 
-# Comando para limpiar archivos generados
+tidy:
+	@echo "Tidying go modules..."
+	@go mod tidy
+
+# ------------------------------------------------------------------------------
+# Docker and Redis
+# ------------------------------------------------------------------------------
+
+start-redis:
+	@echo "Starting Redis container..."
+	@docker-compose -f $(DOCKER_COMPOSE_FILE) up -d
+
+stop-redis:
+	@echo "Stopping Redis container..."
+	@docker-compose -f $(DOCKER_COMPOSE_FILE) down
+
+check-redis:
+	@echo "Pinging Redis..."
+	@docker-compose -f $(DOCKER_COMPOSE_FILE) exec redis redis-cli ping
+
+# ------------------------------------------------------------------------------
+# Cleanup
+# ------------------------------------------------------------------------------
+
 clean:
 	@echo "Cleaning up..."
 	@rm -f $(BINARY_NAME)
-	@echo "Cleanup complete."
-
-# Comando para verificar la conexión a Redis
-check-redis:
-	@echo "Checking Redis connection..."
-	@docker exec $(REDIS_CONTAINER_NAME) redis-cli ping
+	@go clean -testcache
