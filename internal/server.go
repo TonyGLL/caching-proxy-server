@@ -3,8 +3,9 @@ package internal
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/TonyGLL/caching-proxy-server/pkg/config"
 	"github.com/go-redis/redis/v8"
@@ -15,13 +16,15 @@ type Server struct {
 	httpServer *http.Server
 	redis      *redis.Client
 	cfg        *config.Config
+	log        *slog.Logger
 }
 
 // NewServer creates and configures a new server
-func NewServer(cfg *config.Config, redisClient *redis.Client) *Server {
-	proxy, err := NewProxy(cfg, redisClient)
+func NewServer(cfg *config.Config, redisClient *redis.Client, log *slog.Logger) *Server {
+	proxy, err := NewProxy(cfg, redisClient, log)
 	if err != nil {
-		log.Fatalf("Failed to create proxy: %v", err)
+		log.Error("Failed to create proxy", "error", err)
+		os.Exit(1)
 	}
 
 	mux := http.NewServeMux()
@@ -34,17 +37,18 @@ func NewServer(cfg *config.Config, redisClient *redis.Client) *Server {
 		},
 		redis: redisClient,
 		cfg:   cfg,
+		log:   log,
 	}
 }
 
 // Start runs the HTTP server
 func (s *Server) Start() error {
-	log.Printf("Server listening on %s", s.httpServer.Addr)
+	s.log.Info("Server listening", "address", s.httpServer.Addr)
 	return s.httpServer.ListenAndServe()
 }
 
 // Shutdown gracefully shuts down the server
 func (s *Server) Shutdown(ctx context.Context) error {
-	log.Println("Shutting down server...")
+	s.log.Info("Shutting down server...")
 	return s.httpServer.Shutdown(ctx)
 }

@@ -13,6 +13,7 @@ type Config struct {
 	OriginURL    string
 	RedisAddr    string
 	CacheExpires time.Duration
+	LogLevel     string
 }
 
 // Load loads the configuration from environment variables
@@ -27,6 +28,7 @@ func Load() *Config {
 		OriginURL:    getEnv("ORIGIN_URL", "https://dummyjson.com"),
 		RedisAddr:    getEnv("REDIS_ADDR", "localhost:6379"),
 		CacheExpires: getDurationEnv("CACHE_EXPIRES", 10*time.Minute),
+		LogLevel:     getEnv("LOG_LEVEL", "INFO"),
 	}
 }
 

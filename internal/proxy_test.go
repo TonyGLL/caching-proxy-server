@@ -2,6 +2,7 @@ package internal
 
 import (
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,7 +21,8 @@ func TestProxy_CacheHit(t *testing.T) {
 		OriginURL:    "http://dummy-origin.com",
 		CacheExpires: 10 * time.Minute,
 	}
-	proxy, err := NewProxy(cfg, db)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	proxy, err := NewProxy(cfg, db, log)
 	require.NoError(t, err)
 
 	// Mock Redis GET
@@ -57,7 +59,8 @@ func TestProxy_CacheMiss(t *testing.T) {
 		OriginURL:    originServer.URL,
 		CacheExpires: 10 * time.Minute,
 	}
-	proxy, err := NewProxy(cfg, db)
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	proxy, err := NewProxy(cfg, db, log)
 	require.NoError(t, err)
 
 	// Mock Redis GET (miss) and SET
