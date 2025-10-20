@@ -11,6 +11,7 @@ export PORT ?= 8080
 export ORIGIN_URL ?= https://dummyjson.com
 export REDIS_ADDR ?= localhost:6379
 export CACHE_EXPIRES ?= 10m
+export LOG_LEVEL ?= INFO
 
 # Docker parameters
 DOCKER_COMPOSE_FILE=docker-compose.yml
