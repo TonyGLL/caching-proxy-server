@@ -1,4 +1,68 @@
 services:
+  app:
+    depends_on:
+      - redis
+    # Construye usando el Dockerfile del directorio actual
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: cacheproxy:0.0.1
+    container_name: cacheproxy
+
+    # Reiniciar siempre, a menos que lo paremos manualmente
+    restart: unless-stopped
+
+    ports:
+      - "3002:3000"
+
+    env_file:
+      - .env.dev
+
+    # ------------------------------------------------
+    # OPTIMIZACIÓN DE SEGURIDAD (Hardening)
+    # ------------------------------------------------
+    # 1. Sistema de archivos de solo lectura.
+    # Como la imagen es binaria estática, no necesitamos escribir nada
+    # (excepto quizás logs a stdout). Esto evita malware persistente.
+    read_only: true
+
+    # 2. Evitar escalada de privilegios
+    security_opt:
+      - no-new-privileges:true
+
+    # 3. Eliminar TODAS las capacidades de Linux (super seguro)
+    # El binario de Go no necesita permisos de root especiales para red básica.
+    cap_drop:
+      - ALL
+
+    # ------------------------------------------------
+    # OPTIMIZACIÓN DE RECURSOS (Límites)
+    # ------------------------------------------------
+    # Esto evita que un bug en tu código se coma toda la RAM del servidor
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50" # Usa máximo el 50% de un núcleo
+          memory: 64M # Máximo 64MB de RAM (Go es muy eficiente)
+        reservations:
+          cpus: "0.10" # Garantiza al menos 10% de CPU
+          memory: 10M
+
+    # ------------------------------------------------
+    # GESTIÓN DE LOGS
+    # ------------------------------------------------
+    # Vital para que Docker no llene el disco duro del servidor con logs infinitos
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Define una red interna para aislar el servicio
+    networks:
+      - go_net
+
   redis:
     image: redis:alpine # Usa la imagen oficial de Redis
     container_name: redis
@@ -7,6 +71,11 @@ services:
     volumes:
       - redis_data:/data # Persiste los datos de Redis en un volumen
     restart: always # Reinicia el contenedor automáticamente si se detiene
+    networks:
+      - go_net
 
 volumes:
   redis_data: # Define un volumen para persistir los datos de Redis
+
+networks:
+  go_net: # Define una red personalizada para los servicios Go y Redis

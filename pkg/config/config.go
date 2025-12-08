@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 // Config holds the application configuration
@@ -18,7 +20,9 @@ type Config struct {
 
 // Load loads the configuration from environment variables
 func Load() *Config {
-	port, err := strconv.Atoi(getEnv("PORT", "8080"))
+	_ = godotenv.Load()
+
+	port, err := strconv.Atoi(getEnv("PORT", "3000"))
 	if err != nil {
 		log.Fatalf("Invalid port format: %v", err)
 	}
@@ -26,7 +30,7 @@ func Load() *Config {
 	return &Config{
 		Port:         port,
 		OriginURL:    getEnv("ORIGIN_URL", "https://dummyjson.com"),
-		RedisAddr:    getEnv("REDIS_ADDR", "localhost:6379"),
+		RedisAddr:    getEnv("REDIS_ADDR", "localhost:6379"), // Default seguro
 		CacheExpires: getDurationEnv("CACHE_EXPIRES", 10*time.Minute),
 		LogLevel:     getEnv("LOG_LEVEL", "INFO"),
 	}

@@ -7,7 +7,7 @@ BINARY_NAME=main
 GO_FILES=$(shell find . -name '*.go' -not -path "./vendor/*")
 
 # Environment variables (with default values)
-export PORT ?= 8080
+export PORT ?= 3000
 export ORIGIN_URL ?= https://dummyjson.com
 export REDIS_ADDR ?= localhost:6379
 export CACHE_EXPIRES ?= 10m
@@ -31,7 +31,7 @@ build:
 run: build
 	@echo "Starting server on port $(PORT)"
 	@echo "Proxying to: $(ORIGIN_URL)"
-	@./$(BINARY_NAME)
+	@CONFIG_FILE=.env.local ./$(BINARY_NAME)
 
 # ------------------------------------------------------------------------------
 # Testing and Linting

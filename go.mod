@@ -1,10 +1,11 @@
 module github.com/TonyGLL/caching-proxy-server
 
-go 1.22.2
+go 1.25.3
 
 require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-redis/redismock/v8 v8.11.5
+	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.11.1
 )
 

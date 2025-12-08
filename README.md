@@ -39,17 +39,17 @@ Once Redis is running, you can build and start the proxy server with a single co
 ```sh
 make run
 ```
-By default, the server will start on port `8080` and proxy requests to `https://dummyjson.com`.
+By default, the server will start on port `3000` and proxy requests to `https://dummyjson.com`.
 
 ### 3. Test the Proxy
 You can now send requests to the proxy. The `X-Cache` header in the response will tell you if you got a `HIT` or a `MISS`.
 
 ```sh
 # First request (MISS)
-curl -v http://localhost:8080/products/1
+curl -v http://localhost:3000/products/1
 
 # Second request (HIT)
-curl -v http://localhost:8080/products/1
+curl -v http://localhost:3000/products/1
 ```
 
 ---
@@ -60,7 +60,7 @@ The application is configured using environment variables. You can override the 
 
 | Variable        | Description                                  | Default Value            |
 |-----------------|----------------------------------------------|--------------------------|
-| `PORT`          | Port for the proxy server to listen on.      | `8080`                   |
+| `PORT`          | Port for the proxy server to listen on.      | `3000`                   |
 | `ORIGIN_URL`    | The target origin server to proxy requests to. | `https://dummyjson.com`  |
 | `REDIS_ADDR`    | The address of the Redis server.             | `localhost:6379`         |
 | `CACHE_EXPIRES` | Cache expiration time (e.g., `5m`, `1h`).    | `10m`                    |
