@@ -3,7 +3,7 @@
 # ==============================================================================
 
 # Go parameters
-BINARY_NAME=caching-proxy
+BINARY_NAME=main
 GO_FILES=$(shell find . -name '*.go' -not -path "./vendor/*")
 
 # Environment variables (with default values)

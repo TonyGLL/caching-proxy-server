@@ -46,6 +46,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	cachedResponse, err := p.cache.Get(ctx, cacheKey).Bytes()
 	if err == nil {
 		requestLog.Info("Cache HIT", "cache_status", "HIT")
+		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("X-Cache", "HIT")
 		w.Write(cachedResponse)
 		return
@@ -62,6 +63,8 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	proxyReq.URL.Scheme = p.target.Scheme
 	proxyReq.URL.Host = p.target.Host
 	proxyReq.RequestURI = "" // RequestURI cannot be set in a client request
+
+	proxyReq.Header.Set("Accept-Encoding", "identity")
 
 	// Forward the request to the origin server
 	resp, err := p.client.Do(proxyReq)
@@ -82,7 +85,7 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Cache the response if it's a successful one
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		err := p.cache.Set(ctx, cacheKey, body, p.cfg.CacheExpires).Err()
+		err = p.cache.Set(ctx, cacheKey, body, p.cfg.CacheExpires).Err()
 		if err != nil {
 			requestLog.Warn("Failed to cache response", "error", err)
 		}
@@ -90,6 +93,9 @@ func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Copy headers and status code to the response writer
 	for key, values := range resp.Header {
+		if key == "Content-Encoding" {
+			continue
+		} // Ignorar codificación por seguridad
 		for _, value := range values {
 			w.Header().Add(key, value)
 		}
