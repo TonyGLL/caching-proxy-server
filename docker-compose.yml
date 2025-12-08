@@ -59,23 +59,19 @@ services:
         max-size: "10m"
         max-file: "3"
 
-    # Define una red interna para aislar el servicio
-    networks:
-      - go_net
-
   redis:
-    image: redis:alpine # Usa la imagen oficial de Redis
+    image: redis:alpine
     container_name: redis
+    environment:
+      - REDIS_PASSWORD=s3cr3tP@ss
+      - REDIS_USERNAME=default
+      - ALLOW_EMPTY_PASSWORD=no
+      - REDIS_PORT_NUMBER=6379
     ports:
-      - "6379:6379" # Expone el puerto 6379 del contenedor en el host
+      - "6379:6379"
     volumes:
-      - redis_data:/data # Persiste los datos de Redis en un volumen
-    restart: always # Reinicia el contenedor automáticamente si se detiene
-    networks:
-      - go_net
+      - redis_data:/data
+    restart: unless-stopped
 
 volumes:
   redis_data: # Define un volumen para persistir los datos de Redis
-
-networks:
-  go_net: # Define una red personalizada para los servicios Go y Redis
