@@ -1,7 +1,9 @@
 package config
 
 import (
+	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -27,13 +29,46 @@ func Load() *Config {
 		log.Fatalf("Invalid port format: %v", err)
 	}
 
-	return &Config{
+	cfg := &Config{
 		Port:         port,
 		OriginURL:    getEnv("ORIGIN_URL", "https://dummyjson.com"),
-		RedisAddr:    getEnv("REDIS_ADDR", "localhost:6379"), // Default seguro
+		RedisAddr:    getEnv("REDIS_ADDR", ""), // Default seguro
 		CacheExpires: getDurationEnv("CACHE_EXPIRES", 10*time.Minute),
 		LogLevel:     getEnv("LOG_LEVEL", "INFO"),
 	}
+
+	// Build REDIS_URL if not provided: support user+password or only password
+	if cfg.RedisAddr == "" {
+		rHost := getEnv("REDIS_HOST", "")
+		rPort := getEnv("REDIS_PORT", "")
+		rUser := getEnv("REDIS_USER", "") // soporte para REDIS_USERNAME
+		rPass := getEnv("REDIS_PASS", "")
+		rDB := getEnv("REDIS_DB", "0")
+
+		if rHost == "" || rPort == "" {
+			return nil
+		}
+
+		// url-encode user and password
+		encodedUser := url.QueryEscape(rUser)
+		encodedPass := url.QueryEscape(rPass)
+
+		var redisURL string
+		if rUser != "" {
+			// usuario presente
+			redisURL = fmt.Sprintf("redis://%s:%s@%s:%s/%s", encodedUser, encodedPass, rHost, rPort, rDB)
+		} else if rPass != "" {
+			// solo password
+			redisURL = fmt.Sprintf("redis://:%s@%s:%s/%s", encodedPass, rHost, rPort, rDB)
+		} else {
+			// sin auth
+			redisURL = fmt.Sprintf("redis://%s:%s/%s", rHost, rPort, rDB)
+		}
+
+		cfg.RedisAddr = redisURL
+	}
+
+	return cfg
 }
 
 // getEnv retrieves an environment variable or returns a default value
